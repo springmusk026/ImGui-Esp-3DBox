@@ -1,39 +1,56 @@
-void Draw3dBox(ImDrawList *draw,Vector3 Transform,void * camera,int glHeight,int glWidth)
-{
-    Vector3 position2 = Transform + Vector3(0.6, 1.6, 0.6); 
-    Vector3 position3 = Transform + Vector3(0.6, 0, 0.6);
-    Vector3 position4 = Transform + Vector3(-0.5, 0, 0.6); 
-    Vector3 position5 = Transform + Vector3(-0.5, 1.6, 0.6);
-    Vector3 position6 = (Transform + Vector3(0.6, 1.6, 0)) + Vector3(0, 0, -0.6);
-    Vector3 position7 = (Transform + Vector3(0.6, 0, 0)) + Vector3(0, 0, -0.6);
-    Vector3 position8 = (Transform + Vector3(-0.5, 0, 0)) + Vector3(0, 0, -0.6); 
-    Vector3 position9 = (Transform + Vector3(-0.5, 1.6, 0)) + Vector3(0, 0, -0.6);
+void Draw3dBox(ImDrawList* draw, Vector3 origin, void* camera, int screenHeight, int screenWidth) {
+    // Define the 8 corners of the box in 3D space (relative to origin)
+    Vector3 topFrontRight     = origin + Vector3(0.6f, 1.6f,  0.6f);
+    Vector3 bottomFrontRight  = origin + Vector3(0.6f, 0.0f,  0.6f);
+    Vector3 bottomFrontLeft   = origin + Vector3(-0.5f, 0.0f, 0.6f);
+    Vector3 topFrontLeft      = origin + Vector3(-0.5f, 1.6f, 0.6f);
 
-    Vector3 vector = WorldToScreenPoint(camera, position2);
-    Vector3 vector2 = WorldToScreenPoint(camera, position3);
-    Vector3 vector3 = WorldToScreenPoint(camera, position4);
-    Vector3 vector4 = WorldToScreenPoint(camera, position5);
-    Vector3 vector5 = WorldToScreenPoint(camera, position6);
-    Vector3 vector6 = WorldToScreenPoint(camera, position7);
-    Vector3 vector7 = WorldToScreenPoint(camera, position8);
-    Vector3 vector8 = WorldToScreenPoint(camera, position9);
+    Vector3 topBackRight      = origin + Vector3(0.6f, 1.6f, -0.0f) + Vector3(0.0f, 0.0f, -0.6f);
+    Vector3 bottomBackRight   = origin + Vector3(0.6f, 0.0f, -0.0f) + Vector3(0.0f, 0.0f, -0.6f);
+    Vector3 bottomBackLeft    = origin + Vector3(-0.5f, 0.0f, -0.0f) + Vector3(0.0f, 0.0f, -0.6f);
+    Vector3 topBackLeft       = origin + Vector3(-0.5f, 1.6f, -0.0f) + Vector3(0.0f, 0.0f, -0.6f);
 
-    if (vector.Z > 0 && vector2.Z > 0 && vector3.Z > 0 && vector4.Z > 0 && vector5.Z > 0 && vector6.Z > 0 && vector7.Z > 0 && vector8.Z > 0 )
-    {
-        draw->AddLine({(float) (glWidth -(glWidth -vector.X)),(glHeight -vector.Y)}, {glWidth - (glWidth - vector2.X),glHeight -vector2.Y}, ToColor(configs.esp.ESPColor), 2.0f);
-        draw->AddLine({(float) (glWidth -(glWidth -vector3.X)),(glHeight -vector3.Y)}, {glWidth - (glWidth - vector2.X),glHeight -vector2.Y}, ToColor(configs.esp.ESPColor), 2.0f);
-        draw->AddLine({(float) (glWidth -(glWidth -vector.X)),(glHeight -vector.Y)}, {glWidth - (glWidth - vector4.X),glHeight -vector4.Y}, ToColor(configs.esp.ESPColor), 2.0f);
-        draw->AddLine({(float) (glWidth -(glWidth -vector4.X)),(glHeight -vector4.Y)}, {glWidth - (glWidth - vector3.X),glHeight -vector3.Y}, ToColor(configs.esp.ESPColor), 2.0f);
+    // Convert to screen space
+    Vector3 screen[8] = {
+        WorldToScreenPoint(camera, topFrontRight),
+        WorldToScreenPoint(camera, bottomFrontRight),
+        WorldToScreenPoint(camera, bottomFrontLeft),
+        WorldToScreenPoint(camera, topFrontLeft),
+        WorldToScreenPoint(camera, topBackRight),
+        WorldToScreenPoint(camera, bottomBackRight),
+        WorldToScreenPoint(camera, bottomBackLeft),
+        WorldToScreenPoint(camera, topBackLeft)
+    };
 
-        draw->AddLine({(float) (glWidth -(glWidth -vector5.X)),(glHeight -vector5.Y)}, {glWidth - (glWidth - vector6.X),glHeight -vector6.Y}, ToColor(configs.esp.ESPColor), 2.0f);
-        draw->AddLine({(float) (glWidth -(glWidth -vector7.X)),(glHeight -vector7.Y)}, {glWidth - (glWidth - vector6.X),glHeight -vector6.Y}, ToColor(configs.esp.ESPColor), 2.0f);
-        draw->AddLine({(float) (glWidth -(glWidth -vector5.X)),(glHeight -vector5.Y)}, {glWidth - (glWidth - vector8.X),glHeight -vector8.Y}, ToColor(configs.esp.ESPColor), 2.0f);
-        draw->AddLine({(float) (glWidth -(glWidth -vector8.X)),(glHeight -vector8.Y)}, {glWidth - (glWidth - vector7.X),glHeight -vector7.Y}, ToColor(configs.esp.ESPColor), 2.0f);
-
-        draw->AddLine({(float) (glWidth -(glWidth -vector.X)),(glHeight -vector.Y)}, {glWidth - (glWidth - vector5.X),glHeight -vector5.Y}, ToColor(configs.esp.ESPColor), 2.0f);
-        draw->AddLine({(float) (glWidth -(glWidth -vector2.X)),(glHeight -vector2.Y)}, {glWidth - (glWidth - vector6.X),glHeight -vector6.Y}, ToColor(configs.esp.ESPColor), 2.0f);
-        draw->AddLine({(float) (glWidth -(glWidth -vector3.X)),(glHeight -vector3.Y)}, {glWidth - (glWidth - vector7.X),glHeight -vector7.Y}, ToColor(configs.esp.ESPColor), 2.0f);
-        draw->AddLine({(float) (glWidth -(glWidth -vector4.X)),(glHeight -vector4.Y)}, {glWidth - (glWidth - vector8.X),glHeight -vector8.Y}, ToColor(configs.esp.ESPColor), 2.0f);
-    
+    // Ensure all points are in front of the camera
+    for (int i = 0; i < 8; i++) {
+        if (screen[i].Z <= 0)
+            return;
     }
+
+    // Helper lambda to convert Vector3 to ImVec2 (screen space)
+    auto toScreen = [&](const Vector3& v) -> ImVec2 {
+        return ImVec2(v.X, screenHeight - v.Y);
+    };
+
+    ImColor color = ToColor(configs.esp.ESPColor);
+    float thickness = 2.0f;
+
+    // Front face
+    draw->AddLine(toScreen(screen[0]), toScreen(screen[1]), color, thickness); // TopRight - BottomRight
+    draw->AddLine(toScreen(screen[1]), toScreen(screen[2]), color, thickness); // BottomRight - BottomLeft
+    draw->AddLine(toScreen(screen[2]), toScreen(screen[3]), color, thickness); // BottomLeft - TopLeft
+    draw->AddLine(toScreen(screen[3]), toScreen(screen[0]), color, thickness); // TopLeft - TopRight
+
+    // Back face
+    draw->AddLine(toScreen(screen[4]), toScreen(screen[5]), color, thickness); // TopRight - BottomRight
+    draw->AddLine(toScreen(screen[5]), toScreen(screen[6]), color, thickness); // BottomRight - BottomLeft
+    draw->AddLine(toScreen(screen[6]), toScreen(screen[7]), color, thickness); // BottomLeft - TopLeft
+    draw->AddLine(toScreen(screen[7]), toScreen(screen[4]), color, thickness); // TopLeft - TopRight
+
+    // Connect front and back faces
+    draw->AddLine(toScreen(screen[0]), toScreen(screen[4]), color, thickness); // TopFrontRight - TopBackRight
+    draw->AddLine(toScreen(screen[1]), toScreen(screen[5]), color, thickness); // BottomFrontRight - BottomBackRight
+    draw->AddLine(toScreen(screen[2]), toScreen(screen[6]), color, thickness); // BottomFrontLeft - BottomBackLeft
+    draw->AddLine(toScreen(screen[3]), toScreen(screen[7]), color, thickness); // TopFrontLeft - TopBackLeft
 }
